@@ -56,8 +56,6 @@ jobs:
         run: test "${GITHUB_REF_NAME#v}" = "${{ steps.version.outputs.value }}"
 
       - name: Package release artifact
-        env:
-          MACKEYMAP_BUILD_NUMBER: ${{ github.run_number }}
         run: |
           ./scripts/package_release.sh
 

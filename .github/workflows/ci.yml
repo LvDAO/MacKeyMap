@@ -56,8 +56,6 @@ jobs:
         run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: Package release artifact
-        env:
-          MACKEYMAP_BUILD_NUMBER: ${{ github.run_number }}
         run: ./scripts/package_release.sh
 
       - name: Upload build artifact
