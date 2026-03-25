@@ -73,7 +73,6 @@ final class ReleaseUpdater {
         }
 
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
 
         let release = try decoder.decode(GitHubRelease.self, from: data)
         guard AppVersion(tag: release.tagName) != nil else {
@@ -219,6 +218,12 @@ private struct GitHubRelease: Decodable {
     let body: String?
     let assets: [GitHubReleaseAsset]
 
+    private enum CodingKeys: String, CodingKey {
+        case tagName = "tag_name"
+        case body
+        case assets
+    }
+
     var version: AppVersion {
         AppVersion(tag: tagName) ?? .zero
     }
@@ -238,6 +243,11 @@ private struct GitHubRelease: Decodable {
 private struct GitHubReleaseAsset: Decodable {
     let name: String
     let browserDownloadURL: URL
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case browserDownloadURL = "browser_download_url"
+    }
 }
 
 private struct AppVersion: Comparable {
