@@ -12,6 +12,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let engine = RustEngineBridge()
+    private let updater = ReleaseUpdater()
     private let configStore = ConfigStore()
     private lazy var baseStatusImage = loadBaseStatusImage()
     private var config = AppConfig()
@@ -121,6 +122,14 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         menu.addItem(inputMonitoringItem)
 
         menu.addItem(.separator())
+
+        let updateItem = NSMenuItem(
+            title: "Check for Updates…",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
+        updateItem.target = self
+        menu.addItem(updateItem)
 
         let launchItem = NSMenuItem(
             title: "Launch at Login",
@@ -367,6 +376,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         saveConfig()
         DiagnosticsStore.log("launch at login toggled to \(config.launchAtLogin)")
         refreshState()
+    }
+
+    @objc
+    private func checkForUpdates(_ sender: NSMenuItem) {
+        Task { @MainActor in
+            await updater.checkForUpdates()
+        }
     }
 
     @objc

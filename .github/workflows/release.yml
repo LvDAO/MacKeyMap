@@ -55,7 +55,30 @@ jobs:
       - name: Validate tag matches VERSION
         run: test "${GITHUB_REF_NAME#v}" = "${{ steps.version.outputs.value }}"
 
+      - name: Require codesigning credentials
+        env:
+          MACKEYMAP_SIGNING_CERT_BASE64: ${{ secrets.MACKEYMAP_SIGNING_CERT_BASE64 }}
+          MACKEYMAP_SIGNING_CERT_PASSWORD: ${{ secrets.MACKEYMAP_SIGNING_CERT_PASSWORD }}
+          MACKEYMAP_KEYCHAIN_PASSWORD: ${{ secrets.MACKEYMAP_KEYCHAIN_PASSWORD }}
+          MACKEYMAP_SIGN_IDENTITY: ${{ secrets.MACKEYMAP_SIGN_IDENTITY }}
+        run: |
+          test -n "$MACKEYMAP_SIGNING_CERT_BASE64"
+          test -n "$MACKEYMAP_SIGNING_CERT_PASSWORD"
+          test -n "$MACKEYMAP_KEYCHAIN_PASSWORD"
+          test -n "$MACKEYMAP_SIGN_IDENTITY"
+
+      - name: Import codesigning identity
+        env:
+          MACKEYMAP_SIGNING_CERT_BASE64: ${{ secrets.MACKEYMAP_SIGNING_CERT_BASE64 }}
+          MACKEYMAP_SIGNING_CERT_PASSWORD: ${{ secrets.MACKEYMAP_SIGNING_CERT_PASSWORD }}
+          MACKEYMAP_KEYCHAIN_PASSWORD: ${{ secrets.MACKEYMAP_KEYCHAIN_PASSWORD }}
+          MACKEYMAP_SIGN_IDENTITY: ${{ secrets.MACKEYMAP_SIGN_IDENTITY }}
+        run: ./scripts/import_codesign_identity.sh
+
       - name: Package release artifact
+        env:
+          MACKEYMAP_SIGN_IDENTITY: ${{ secrets.MACKEYMAP_SIGN_IDENTITY }}
+          MACKEYMAP_REQUIRE_SIGNING: "1"
         run: |
           ./scripts/package_release.sh
 

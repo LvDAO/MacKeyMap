@@ -47,5 +47,11 @@ MacKeyMap uses semantic versioning for user-facing releases:
 ## Distribution notes
 
 - Current releases are intended for direct website or GitHub distribution, not the Mac App Store.
-- Without a paid Apple Developer membership, artifacts remain unsigned or ad hoc signed and are not notarized.
+- GitHub Releases must be signed with the same Apple Development identity used for local testing. Ad-hoc signed builds can break `Input Monitoring`, even if the user re-grants the permission.
+- Configure these GitHub Actions secrets before publishing:
+  - `MACKEYMAP_SIGNING_CERT_BASE64`: base64-encoded `.p12` export of the Apple Development certificate
+  - `MACKEYMAP_SIGNING_CERT_PASSWORD`: password used for the `.p12` export
+  - `MACKEYMAP_KEYCHAIN_PASSWORD`: temporary runner keychain password
+  - `MACKEYMAP_SIGN_IDENTITY`: exact signing identity string, for example `Apple Development: name@example.com (TEAMID)`
+- `release.yml` now fails fast if those secrets are missing, instead of shipping a broken ad-hoc release.
 - Keep release notes explicit about installation steps, permissions, and the expected Gatekeeper warning flow.

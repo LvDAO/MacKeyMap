@@ -101,6 +101,9 @@ enum DiagnosticsStore {
         let bundle = Bundle.main
         let shortVersion = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let buildVersion = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        let bundleIdentifier = bundle.bundleIdentifier ?? "unknown"
+        let bundlePath = bundle.bundleURL.path
+        let codeSignature = currentCodeSignatureSummary()
 
         let deviceLines = snapshot.devices.map { device in
             let mode = device.remapMode ?? "none"
@@ -111,6 +114,9 @@ enum DiagnosticsStore {
             "MacKeyMap Diagnostics",
             "Generated: \(iso8601Timestamp())",
             "Version: \(shortVersion) (\(buildVersion))",
+            "Bundle identifier: \(bundleIdentifier)",
+            "Bundle path: \(bundlePath)",
+            "Code signature: \(codeSignature)",
             "Engine status: \(snapshot.engineStatus)",
             "Remapping enabled: \(config.enabled)",
             "Launch at login: \(config.launchAtLogin)",
@@ -165,5 +171,54 @@ enum DiagnosticsStore {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         return formatter.string(from: Date())
+    }
+
+    private static func currentCodeSignatureSummary() -> String {
+        let process = Process()
+        let outputPipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        process.arguments = ["-dv", "--verbose=4", Bundle.main.bundleURL.path]
+        process.standardError = outputPipe
+        process.standardOutput = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return "unavailable (\(error.localizedDescription))"
+        }
+
+        guard process.terminationStatus == 0 else {
+            return "codesign exited with status \(process.terminationStatus)"
+        }
+
+        let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8) else {
+            return "unavailable"
+        }
+
+        let authority = output
+            .components(separatedBy: .newlines)
+            .first(where: { $0.hasPrefix("Authority=") })
+            .map { String($0.dropFirst("Authority=".count)) }
+        let teamIdentifier = output
+            .components(separatedBy: .newlines)
+            .first(where: { $0.hasPrefix("TeamIdentifier=") })
+            .map { String($0.dropFirst("TeamIdentifier=".count)) }
+        let signature = output
+            .components(separatedBy: .newlines)
+            .first(where: { $0.hasPrefix("Signature=") })
+            .map { String($0.dropFirst("Signature=".count)) }
+
+        return [signature, authority, teamIdentifier]
+            .compactMap { $0 }
+            .joined(separator: " | ")
+            .ifEmpty("unavailable")
+    }
+}
+
+private extension String {
+    func ifEmpty(_ fallback: String) -> String {
+        isEmpty ? fallback : self
     }
 }

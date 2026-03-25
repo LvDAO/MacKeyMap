@@ -17,6 +17,10 @@ enum AppSupportPaths {
         applicationSupportDirectory.appendingPathComponent("config.json")
     }
 
+    static var updatesDirectory: URL {
+        applicationSupportDirectory.appendingPathComponent("Updates", isDirectory: true)
+    }
+
     static var appLogURL: URL {
         logsDirectory.appendingPathComponent("app.log")
     }
@@ -28,6 +32,10 @@ enum AppSupportPaths {
     static func ensureApplicationSupportDirectories() throws {
         try FileManager.default.createDirectory(
             at: logsDirectory,
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: updatesDirectory,
             withIntermediateDirectories: true
         )
     }

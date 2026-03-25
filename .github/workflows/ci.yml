@@ -55,7 +55,19 @@ jobs:
         id: version
         run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
+      - name: Import codesigning identity
+        if: ${{ secrets.MACKEYMAP_SIGNING_CERT_BASE64 != '' && secrets.MACKEYMAP_SIGNING_CERT_PASSWORD != '' && secrets.MACKEYMAP_KEYCHAIN_PASSWORD != '' && secrets.MACKEYMAP_SIGN_IDENTITY != '' }}
+        env:
+          MACKEYMAP_SIGNING_CERT_BASE64: ${{ secrets.MACKEYMAP_SIGNING_CERT_BASE64 }}
+          MACKEYMAP_SIGNING_CERT_PASSWORD: ${{ secrets.MACKEYMAP_SIGNING_CERT_PASSWORD }}
+          MACKEYMAP_KEYCHAIN_PASSWORD: ${{ secrets.MACKEYMAP_KEYCHAIN_PASSWORD }}
+          MACKEYMAP_SIGN_IDENTITY: ${{ secrets.MACKEYMAP_SIGN_IDENTITY }}
+        run: ./scripts/import_codesign_identity.sh
+
       - name: Package release artifact
+        env:
+          MACKEYMAP_SIGN_IDENTITY: ${{ secrets.MACKEYMAP_SIGN_IDENTITY }}
+          MACKEYMAP_REQUIRE_SIGNING: ${{ secrets.MACKEYMAP_SIGNING_CERT_BASE64 != '' && secrets.MACKEYMAP_SIGNING_CERT_PASSWORD != '' && secrets.MACKEYMAP_KEYCHAIN_PASSWORD != '' && secrets.MACKEYMAP_SIGN_IDENTITY != '' && '1' || '0' }}
         run: ./scripts/package_release.sh
 
       - name: Upload build artifact

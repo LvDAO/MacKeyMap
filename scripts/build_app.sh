@@ -12,6 +12,7 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 SIGN_IDENTITY="${MACKEYMAP_SIGN_IDENTITY:-}"
+REQUIRE_SIGNING="${MACKEYMAP_REQUIRE_SIGNING:-0}"
 ICON_FILE="$ROOT_DIR/Assets/AppIcon.icns"
 MENU_BAR_ICON_FILE="$ROOT_DIR/Assets/MenuBarTemplate.png"
 
@@ -83,6 +84,11 @@ chmod +x "$MACOS_DIR/$APP_NAME"
 
 if [[ -z "$SIGN_IDENTITY" ]]; then
   SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.* "\(Apple Development:.*\)"/\1/p' | head -n 1)"
+fi
+
+if [[ "$REQUIRE_SIGNING" == "1" && -z "$SIGN_IDENTITY" ]]; then
+  echo "Signing identity required but not available. Set MACKEYMAP_SIGN_IDENTITY and import the certificate before building." >&2
+  exit 1
 fi
 
 if [[ -n "$SIGN_IDENTITY" ]]; then

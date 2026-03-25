@@ -21,6 +21,7 @@ Available options:
 - `Swap Left Alt and Win`
 - `Swap Right Alt and Win`
 - `Disable Context Menu Remap`
+- `Check for Updates…`
 - `Launch at Login`
 
 ## Diagnostics
