@@ -5,15 +5,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIGURATION="${1:-debug}"
 APP_NAME="MacKeyMap"
 APP_EXECUTABLE="MacKeyMapApp"
+APP_VERSION="${MACKEYMAP_VERSION:-$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")}"
+APP_BUILD_NUMBER="${MACKEYMAP_BUILD_NUMBER:-1}"
 APP_DIR="$ROOT_DIR/dist/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 SIGN_IDENTITY="${MACKEYMAP_SIGN_IDENTITY:-}"
 ICON_FILE="$ROOT_DIR/Assets/AppIcon.icns"
+MENU_BAR_ICON_FILE="$ROOT_DIR/Assets/MenuBarTemplate.png"
 
 mkdir -p "$ROOT_DIR/dist"
 mkdir -p "$ROOT_DIR/target/debug" "$ROOT_DIR/target/release"
+
+"$ROOT_DIR/scripts/render_icons.sh"
 
 if [[ "$CONFIGURATION" == "release" ]]; then
   cargo build --manifest-path "$ROOT_DIR/rust-core/Cargo.toml" --release
@@ -37,7 +42,11 @@ if [[ -f "$ICON_FILE" ]]; then
   cp "$ICON_FILE" "$RESOURCES_DIR/AppIcon.icns"
 fi
 
-cat >"$CONTENTS_DIR/Info.plist" <<'PLIST'
+if [[ -f "$MENU_BAR_ICON_FILE" ]]; then
+  cp "$MENU_BAR_ICON_FILE" "$RESOURCES_DIR/MenuBarTemplate.png"
+fi
+
+cat >"$CONTENTS_DIR/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -57,9 +66,9 @@ cat >"$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>${APP_VERSION}</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>${APP_BUILD_NUMBER}</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>LSUIElement</key>

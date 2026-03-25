@@ -4,13 +4,15 @@ mod mapping;
 use config::{AppConfig, PermissionAccess, PermissionState};
 use std::collections::BTreeMap;
 use std::ffi::{CStr, CString};
-use std::fs::OpenOptions;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::os::raw::{c_char, c_void};
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::ptr;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub use config::{ModifierOverrides, PresetKind};
 pub use mapping::{modifier_remap_entries, user_key_mapping_json};
@@ -77,6 +79,8 @@ const K_IO_HID_USAGE_KEYBOARD: i64 = 0x06;
 type IOHIDDeviceCallback =
     Option<unsafe extern "C" fn(*mut c_void, IOReturn, *mut c_void, IOHIDDeviceRef)>;
 
+// Unsafe is intentionally confined to this file because it is the only place that crosses the
+// CoreFoundation / IOKit FFI boundary.
 #[link(name = "CoreFoundation", kind = "framework")]
 extern "C" {
     fn CFRetain(cf: CFTypeRef) -> CFTypeRef;
@@ -987,10 +991,55 @@ fn bool_from_u8(value: u8) -> bool {
 }
 
 fn log_debug(message: &str) {
-    let path = "/tmp/MacKeyMap.log";
-    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(file, "{message}");
+    let Some(path) = engine_log_path() else {
+        return;
+    };
+
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
     }
+    let _ = rotate_log_if_needed(&path);
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or_default();
+
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&path) {
+        let _ = writeln!(file, "[{timestamp}] {message}");
+    }
+}
+
+fn engine_log_path() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME")?;
+    Some(
+        PathBuf::from(home)
+            .join("Library")
+            .join("Application Support")
+            .join("MacKeyMap")
+            .join("Logs")
+            .join("engine.log"),
+    )
+}
+
+fn rotate_log_if_needed(path: &Path) -> std::io::Result<()> {
+    const MAX_LOG_BYTES: u64 = 512 * 1024;
+
+    let metadata = match fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error),
+    };
+
+    if metadata.len() < MAX_LOG_BYTES {
+        return Ok(());
+    }
+
+    let previous_path = path.with_file_name("engine.previous.log");
+    if previous_path.exists() {
+        fs::remove_file(&previous_path)?;
+    }
+    fs::rename(path, previous_path)
 }
 
 unsafe fn engine_from_ptr<'a>(ptr: *mut Engine) -> Option<&'a Engine> {

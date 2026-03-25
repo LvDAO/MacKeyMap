@@ -51,17 +51,18 @@ jobs:
       - name: Run mapping benchmark
         run: cargo run --manifest-path rust-core/Cargo.toml --release --bin bench_mapping
 
-      - name: Build release app bundle
-        run: ./scripts/build_app.sh release
+      - name: Read app version
+        id: version
+        run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
-      - name: Zip app bundle
-        run: |
-          rm -f dist/MacKeyMap-macos.zip
-          ditto -c -k --sequesterRsrc --keepParent dist/MacKeyMap.app dist/MacKeyMap-macos.zip
+      - name: Package release artifact
+        env:
+          MACKEYMAP_BUILD_NUMBER: ${{ github.run_number }}
+        run: ./scripts/package_release.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MacKeyMap-macos
-          path: dist/MacKeyMap-macos.zip
+          name: MacKeyMap-${{ steps.version.outputs.value }}-macos
+          path: dist/MacKeyMap-${{ steps.version.outputs.value }}-macos.zip
           if-no-files-found: error

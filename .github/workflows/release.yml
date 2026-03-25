@@ -48,17 +48,22 @@ jobs:
       - name: Run Rust tests
         run: cargo test --workspace
 
-      - name: Build release app bundle
-        run: ./scripts/build_app.sh release
+      - name: Read app version
+        id: version
+        run: echo "value=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches VERSION
+        run: test "${GITHUB_REF_NAME#v}" = "${{ steps.version.outputs.value }}"
 
       - name: Package release artifact
+        env:
+          MACKEYMAP_BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          rm -f dist/MacKeyMap-macos.zip
-          ditto -c -k --sequesterRsrc --keepParent dist/MacKeyMap.app dist/MacKeyMap-macos.zip
+          ./scripts/package_release.sh
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/MacKeyMap-macos.zip
+          files: dist/MacKeyMap-${{ steps.version.outputs.value }}-macos.zip
           generate_release_notes: true
-          name: MacKeyMap ${{ github.ref_name }}
+          name: MacKeyMap ${{ steps.version.outputs.value }}

@@ -12,6 +12,7 @@ pub struct HidRemapEntry {
     pub dst: u64,
 }
 
+/// Returns the static `hidutil` remap entries implied by the current override switches.
 pub fn modifier_remap_entries(overrides: &ModifierOverrides) -> Vec<HidRemapEntry> {
     let mut entries = Vec::with_capacity(5);
 
@@ -47,6 +48,7 @@ pub fn modifier_remap_entries(overrides: &ModifierOverrides) -> Vec<HidRemapEntr
     entries
 }
 
+/// Builds the `hidutil property --set` JSON payload for the current modifier mapping state.
 pub fn user_key_mapping_json(overrides: &ModifierOverrides) -> String {
     let mappings = modifier_remap_entries(overrides)
         .into_iter()

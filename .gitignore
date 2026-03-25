@@ -1,6 +1,9 @@
 .DS_Store
 .build/
 .swiftpm/
+.tmp-icons/
+Assets/AppIcon.icns
+Assets/MenuBarTemplate.png
 dist/
 target/
 *.log

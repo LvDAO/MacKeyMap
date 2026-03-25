@@ -1,5 +1,6 @@
 import Foundation
 
+/// Thin Swift wrapper over the Rust C ABI used by the menu bar process.
 @_silgen_name("mackeymap_engine_create")
 private func mackeymap_engine_create() -> UnsafeMutableRawPointer?
 
@@ -82,6 +83,7 @@ final class RustEngineBridge {
         }
     }
 
+    /// Returns the current engine snapshot if the Rust side produced valid JSON.
     func fetchSnapshot() -> EngineSnapshot? {
         guard let raw = mackeymap_engine_copy_snapshot_json(handle) else {
             return nil

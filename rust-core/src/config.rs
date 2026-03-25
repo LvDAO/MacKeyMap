@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 
+/// User-configurable modifier remap toggles.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ModifierOverrides {
     pub swap_left_alt_win: bool,
@@ -95,6 +96,7 @@ pub struct PermissionState {
 }
 
 impl AppConfig {
+    /// Serializes the persisted app configuration into the JSON shape used by the Swift shell.
     pub fn to_json(&self) -> String {
         let devices = self
             .device_selections
